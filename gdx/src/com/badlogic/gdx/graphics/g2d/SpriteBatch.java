@@ -90,7 +90,7 @@ public class SpriteBatch implements Batch {
 		// 32767 is max index, so 32767 / 6 - (32767 / 6 % 3) = 5460.
 		if (size > 5460) throw new IllegalArgumentException("Can't have more than 5460 sprites per batch: " + size);
 
-		mesh = new Mesh(VertexDataType.VertexArray, false, size * 4, size * 6, new VertexAttribute(Usage.Position, 2,
+		mesh = new Mesh(VertexDataType.VertexArray, false, size * 4, size * 6, new VertexAttribute(Usage.Position, 3,
 			ShaderProgram.POSITION_ATTRIBUTE), new VertexAttribute(Usage.ColorPacked, 4, ShaderProgram.COLOR_ATTRIBUTE),
 			new VertexAttribute(Usage.TextureCoordinates, 2, ShaderProgram.TEXCOORD_ATTRIBUTE + "0"));
 
@@ -541,6 +541,56 @@ public class SpriteBatch implements Batch {
 	}
 
 	@Override
+	public void draw (Texture texture, float x, float y, float width, float height, int layer) {
+		if (!drawing) throw new IllegalStateException("SpriteBatch.begin must be called before draw.");
+
+		float[] vertices = this.vertices;
+
+		if (texture != lastTexture)
+			switchTexture(texture);
+		else if (idx == vertices.length) //
+			flush();
+
+		final float fx2 = x + width;
+		final float fy2 = y + height;
+		final float u = 0;
+		final float v = 1;
+		final float u2 = 1;
+		final float v2 = 0;
+
+		float color = this.color;
+		int idx = this.idx;
+		vertices[idx++] = x;
+		vertices[idx++] = y;
+		vertices[idx++] = (float) layer;
+		vertices[idx++] = color;
+		vertices[idx++] = u;
+		vertices[idx++] = v;
+
+		vertices[idx++] = x;
+		vertices[idx++] = fy2;
+		vertices[idx++] = (float) layer;
+		vertices[idx++] = color;
+		vertices[idx++] = u;
+		vertices[idx++] = v2;
+
+		vertices[idx++] = fx2;
+		vertices[idx++] = fy2;
+		vertices[idx++] = (float) layer;
+		vertices[idx++] = color;
+		vertices[idx++] = u2;
+		vertices[idx++] = v2;
+
+		vertices[idx++] = fx2;
+		vertices[idx++] = y;
+		vertices[idx++] = (float) layer;
+		vertices[idx++] = color;
+		vertices[idx++] = u2;
+		vertices[idx++] = v;
+		this.idx = idx;
+	}
+
+	@Override
 	public void draw (Texture texture, float[] spriteVertices, int offset, int count) {
 		if (!drawing) throw new IllegalStateException("SpriteBatch.begin must be called before draw.");
 
@@ -736,6 +786,130 @@ public class SpriteBatch implements Batch {
 
 		vertices[idx++] = x4;
 		vertices[idx++] = y4;
+		vertices[idx++] = color;
+		vertices[idx++] = u2;
+		vertices[idx++] = v;
+		this.idx = idx;
+	}
+
+	@Override
+	public void draw (TextureRegion region, float x, float y, float originX, float originY, float width, float height,
+		float scaleX, float scaleY, float rotation, int layer) {
+		if (!drawing) throw new IllegalStateException("SpriteBatch.begin must be called before draw.");
+
+		float[] vertices = this.vertices;
+
+		Texture texture = region.texture;
+		if (texture != lastTexture) {
+			switchTexture(texture);
+		} else if (idx == vertices.length) //
+			flush();
+
+		// bottom left and top right corner points relative to origin
+		final float worldOriginX = x + originX;
+		final float worldOriginY = y + originY;
+		float fx = -originX;
+		float fy = -originY;
+		float fx2 = width - originX;
+		float fy2 = height - originY;
+
+		// scale
+		if (scaleX != 1 || scaleY != 1) {
+			fx *= scaleX;
+			fy *= scaleY;
+			fx2 *= scaleX;
+			fy2 *= scaleY;
+		}
+
+		// construct corner points, start from top left and go counter clockwise
+		final float p1x = fx;
+		final float p1y = fy;
+		final float p2x = fx;
+		final float p2y = fy2;
+		final float p3x = fx2;
+		final float p3y = fy2;
+		final float p4x = fx2;
+		final float p4y = fy;
+
+		float x1;
+		float y1;
+		float x2;
+		float y2;
+		float x3;
+		float y3;
+		float x4;
+		float y4;
+
+		// rotate
+		if (rotation != 0) {
+			final float cos = MathUtils.cosDeg(rotation);
+			final float sin = MathUtils.sinDeg(rotation);
+
+			x1 = cos * p1x - sin * p1y;
+			y1 = sin * p1x + cos * p1y;
+
+			x2 = cos * p2x - sin * p2y;
+			y2 = sin * p2x + cos * p2y;
+
+			x3 = cos * p3x - sin * p3y;
+			y3 = sin * p3x + cos * p3y;
+
+			x4 = x1 + (x3 - x2);
+			y4 = y3 - (y2 - y1);
+		} else {
+			x1 = p1x;
+			y1 = p1y;
+
+			x2 = p2x;
+			y2 = p2y;
+
+			x3 = p3x;
+			y3 = p3y;
+
+			x4 = p4x;
+			y4 = p4y;
+		}
+
+		x1 += worldOriginX;
+		y1 += worldOriginY;
+		x2 += worldOriginX;
+		y2 += worldOriginY;
+		x3 += worldOriginX;
+		y3 += worldOriginY;
+		x4 += worldOriginX;
+		y4 += worldOriginY;
+
+		final float u = region.u;
+		final float v = region.v2;
+		final float u2 = region.u2;
+		final float v2 = region.v;
+
+		float color = this.color;
+		int idx = this.idx;
+		vertices[idx++] = x1;
+		vertices[idx++] = y1;
+		vertices[idx++] = (float) layer;
+		vertices[idx++] = color;
+		vertices[idx++] = u;
+		vertices[idx++] = v;
+
+		vertices[idx++] = x2;
+		vertices[idx++] = y2;
+		vertices[idx++] = (float) layer;
+		vertices[idx++] = color;
+		vertices[idx++] = u;
+		vertices[idx++] = v2;
+
+		vertices[idx++] = x3;
+		vertices[idx++] = y3;
+		vertices[idx++] = (float) layer;
+		vertices[idx++] = color;
+		vertices[idx++] = u2;
+		vertices[idx++] = v2;
+
+		vertices[idx++] = x4;
+		vertices[idx++] = y4;
+		vertices[idx++] = (float) layer;
 		vertices[idx++] = color;
 		vertices[idx++] = u2;
 		vertices[idx++] = v;

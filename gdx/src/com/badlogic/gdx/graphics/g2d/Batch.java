@@ -134,6 +134,8 @@ public interface Batch extends Disposable {
 	/** Draws a rectangle with the bottom left corner at x,y and stretching the region to cover the given width and height. */
 	public void draw (Texture texture, float x, float y, float width, float height);
 
+	public void draw (Texture texture, float x, float y, float width, float height, int layer);
+
 	/** Draws a rectangle using the given vertices. There must be 4 vertices, each made up of 5 elements in this order: x, y, color,
 	 * u, v. The {@link #getColor()} from the Batch is not applied. */
 	public void draw (Texture texture, float[] spriteVertices, int offset, int count);
@@ -150,6 +152,9 @@ public interface Batch extends Disposable {
 	 * originX, originY. */
 	public void draw (TextureRegion region, float x, float y, float originX, float originY, float width, float height,
 		float scaleX, float scaleY, float rotation);
+
+	public void draw (TextureRegion region, float x, float y, float originX, float originY, float width, float height,
+		float scaleX, float scaleY, float rotation, int layer);
 
 	/** Draws a rectangle with the texture coordinates rotated 90 degrees. The bottom left corner at x,y and stretching the region
 	 * to cover the given width and height. The rectangle is offset by originX, originY relative to the origin. Scale specifies the

@@ -33,7 +33,7 @@ import com.badlogic.gdx.utils.NumberUtils;
  * @author mzechner
  * @author Nathan Sweet */
 public class Sprite extends TextureRegion {
-	static final int VERTEX_SIZE = 2 + 1 + 2;
+	static final int VERTEX_SIZE = 3 + 1 + 2;
 	static final int SPRITE_SIZE = 4 * VERTEX_SIZE;
 
 	final float[] vertices = new float[SPRITE_SIZE];
